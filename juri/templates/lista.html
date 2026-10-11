@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Lista de Clientes{% endblock %}
+{% block content %}
+
+<section class="consulta-hero lista-hero">
+    <div class="consulta-copy">
+        <span class="badge">Clientes</span>
+        <h3>Cadastro e gestão de clientes</h3>
+        <p>Organize o escritório com uma visão clara dos dados cadastrais, processos e atuação.</p>
+    </div>
+    <div class="stat-strip">
+        <div class="mini-stat">
+            <span>Registros</span>
+            <strong>{{ clientes|length }}</strong>
+        </div>
+        <div class="mini-stat">
+            <span>Ativos</span>
+            <strong>Online</strong>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h4>Lista de clientes</h4>
+        <span class="tag tag-blue">{{ clientes|length }} registros</span>
+    </div>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>RG</th>
+                    <th>Telefone</th>
+                    <th>Cidade</th>
+                    <th>Tipo</th>
+                    <th>Processo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                    <tr>
+                        <td>{{ cliente.nome }}</td>
+                        <td>{{ cliente.cpf }}</td>
+                        <td>{{ cliente.rg }}</td>
+                        <td>{{ cliente.telefone }}</td>
+                        <td>{{ cliente.cidade }}</td>
+                        <td>{{ cliente.tipoCaso }}</td>
+                        <td>{{ cliente.numeroProcesso }}</td>
+                        <td class="actions-cell">
+                            <form action="{{ url_for('editar_cliente', idx=loop.index0) }}" method="get">
+                                <button type="submit" class="ghost-btn light compact">Editar</button>
+                            </form>
+                            <form action="{{ url_for('excluir_cliente', idx=loop.index0) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                                <button type="submit" class="ghost-btn light compact danger">Excluir</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="empty-row">Nenhum cliente cadastrado ainda.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}
+

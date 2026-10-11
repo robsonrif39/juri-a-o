@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+{% block title %}Calendário de Avisos{% endblock %}
+{% block content %}
+
+<section class="modern-header">
+    <div>
+        <span class="badge">Agenda</span>
+        <h3>Calendário de avisos e cobranças</h3>
+    </div>
+    <div class="header-actions">
+        <button type="button" class="ghost-btn light" onclick="changeMonth(-1)">◀</button>
+        <button type="button" class="ghost-btn light" onclick="changeMonth(1)">▶</button>
+    </div>
+</section>
+
+<section class="panel form-panel">
+    <form id="calendarioForm" class="juridic-form">
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label for="cliente">Cliente</label>
+                <select id="cliente" name="cliente" required>
+                    <option value="">Selecione um cliente</option>
+                    {% for cliente in clientes %}
+                        <option value="{{ cliente.nome }}">{{ cliente.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="valor">Valor da cobrança</label>
+                <input type="text" id="valor" name="valor" required placeholder="Ex.: 1500,00">
+            </div>
+        </div>
+
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label for="data">Data da cobrança</label>
+                <input type="date" id="data" name="data" required>
+            </div>
+            <div class="field-group">
+                <label for="parcelas">Quant. parcelas</label>
+                <input type="number" id="parcelas" name="parcelas" min="1" value="1" required>
+            </div>
+            <div class="field-group">
+                <label for="observacao">Observação</label>
+                <input type="text" id="observacao" name="observacao" placeholder="Detalhes do aviso">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="ghost-btn light" onclick="carregarAvisos()">Atualizar</button>
+            <button type="submit" class="primary-btn dark">Adicionar aviso</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel form-panel">
+    <div class="panel-header">
+        <h4>Cadastro manual de aviso de processo</h4>
+    </div>
+    <form id="calendarioManualForm" class="juridic-form">
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label for="clienteManual">Cliente</label>
+                <select id="clienteManual" name="clienteManual">
+                    <option value="">Selecione um cliente</option>
+                    {% for cliente in clientes %}
+                        <option value="{{ cliente.nome }}">{{ cliente.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="processoManual">Processo</label>
+                <input type="text" id="processoManual" name="processoManual" placeholder="Ex.: 0001234-56.2024.8.26.0000" required>
+            </div>
+            <div class="field-group">
+                <label for="diasManual">Dias úteis</label>
+                <input type="number" id="diasManual" name="diasManual" min="1" value="5" required>
+            </div>
+        </div>
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label for="dataBaseManual">Data base</label>
+                <input type="date" id="dataBaseManual" name="dataBaseManual" required>
+            </div>
+            <div class="field-group">
+                <label for="obsManual">Observação</label>
+                <input type="text" id="obsManual" name="obsManual" placeholder="Descrição do aviso do processo">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="primary-btn dark">Salvar aviso do processo</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h4>Calendário</h4>
+        <span id="monthYear" class="tag tag-blue">Mês atual</span>
+    </div>
+    <div class="calendar-shell">
+        <div class="calendar" id="calendar"></div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h4>Avisos e parcelas</h4>
+        <button type="button" class="ghost-btn light compact" onclick="dividirTodasParcelas()">Gerar parcelas</button>
+    </div>
+    <div id="avisos-lista" class="results-list"></div>
+</section>
+
+<script>
+    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const clientes = {{ clientes | tojson }};
+    let alerts = {};
+    let current = new Date();
+
+    function preencherProcessoManual() {
+        const clienteSelect = document.getElementById('clienteManual');
+        const processoInput = document.getElementById('processoManual');
+        if (!clienteSelect || !processoInput) return;
+
+        const nomeCliente = clienteSelect.value;
+        const cliente = clientes.find(item => item.nome === nomeCliente);
+        processoInput.value = cliente && cliente.numeroProcesso ? cliente.numeroProcesso : '';
+    }
+
+    function adicionarDiasUteis(dataStr, dias, feriados = []) {
+        if (!dataStr) return '';
+        const [ano, mes, dia] = dataStr.split('-').map(Number);
+        const data = new Date(ano, mes - 1, dia);
+        let contador = 0;
+
+        while (contador < dias) {
+            data.setDate(data.getDate() + 1);
+            const iso = data.toISOString().slice(0, 10);
+            const ehFeriado = feriados.includes(iso);
+            const diaSemana = data.getDay();
+            if (diaSemana !== 0 && diaSemana !== 6 && !ehFeriado) {
+                contador += 1;
+            }
+        }
+
+        return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+    }
+
+    function renderCalendar() {
+        const calendar = document.getElementById('calendar');
+        const monthYear = document.getElementById('monthYear');
+        calendar.innerHTML = '';
+
+        const year = current.getFullYear();
+        const month = current.getMonth();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        monthYear.textContent = `${monthNames[month]} ${year}`;
+
+        const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        weekdays.forEach(day => {
+            const div = document.createElement('div');
+            div.className = 'calendar-weekday';
+            div.textContent = day;
+            calendar.appendChild(div);
+        });
+
+        for (let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-empty';
+            calendar.appendChild(empty);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const div = document.createElement('div');
+            div.className = 'calendar-day';
+
+            const numeroDia = document.createElement('div');
+            numeroDia.textContent = day;
+            numeroDia.className = 'calendar-day-number';
+            div.appendChild(numeroDia);
+
+            if (alerts[dateKey] && alerts[dateKey].length > 0) {
+                const lista = document.createElement('div');
+                lista.className = 'calendar-items';
+
+                alerts[dateKey].forEach((aviso, idx) => {
+                    const item = document.createElement('div');
+                    const isManualProcess = aviso.tipo === 'processo_manual' || Boolean(aviso.processo) || Boolean(aviso.numeroProcesso);
+                    item.className = isManualProcess ? 'calendar-item manual-process' : 'calendar-item';
+                    const primeiroNome = aviso.cliente?.split(' ')[0] || 'Cliente';
+                    const label = isManualProcess ? 'Aviso de processo' : 'Cobrança';
+                    const resumo = isManualProcess ? (aviso.prazo || 'Prazo manual') : (`R$ ${aviso.valorParcela} · ${aviso.parcela}`);
+                    item.innerHTML = `<div><strong>${primeiroNome}</strong><span>${label} · ${resumo}</span></div>`;
+
+                    const btnEditar = document.createElement('button');
+                    btnEditar.textContent = '✎';
+                    btnEditar.className = 'mini-action';
+                    btnEditar.onclick = function (e) {
+                        e.stopPropagation();
+                        const novoCliente = prompt('Editar nome do cliente:', aviso.cliente || '');
+                        if (novoCliente === null) return;
+                        const novoValorParcela = prompt('Editar valor da parcela:', aviso.valorParcela || '');
+                        if (novoValorParcela === null) return;
+                        const novaObs = prompt('Editar observação:', aviso.observacao || '');
+                        if (novaObs === null) return;
+
+                        fetch('/editar_aviso', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ dateKey, idx, aviso: { ...aviso, cliente: novoCliente, valorParcela: novoValorParcela, observacao: novaObs } })
+                        }).then(() => carregarAvisos());
+                    };
+
+                    const btnExcluir = document.createElement('button');
+                    btnExcluir.textContent = '🗑';
+                    btnExcluir.className = 'mini-action danger';
+                    btnExcluir.onclick = function (e) {
+                        e.stopPropagation();
+                        if (confirm('Deseja excluir este aviso?')) {
+                            fetch('/excluir_aviso', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ dateKey, idx })
+                            }).then(() => carregarAvisos());
+                        }
+                    };
+
+                    item.appendChild(btnEditar);
+                    item.appendChild(btnExcluir);
+                    lista.appendChild(item);
+                });
+                div.appendChild(lista);
+                div.classList.add('has-alert');
+            }
+
+            const hoje = new Date();
+            const ehHoje = hoje.getFullYear() === year && hoje.getMonth() === month && hoje.getDate() === day;
+            if (ehHoje) div.classList.add('today');
+
+            div.onclick = () => {
+                if (alerts[dateKey] && alerts[dateKey].length > 0) {
+                    let msg = '';
+                    let total = 0;
+                    alerts[dateKey].forEach(aviso => {
+                        msg += `Cliente: ${aviso.cliente}\n`;
+                        total += parseFloat((aviso.valorParcela || '0').replace('.', '').replace(',', '.'));
+                    });
+                    msg += `\nValor total do dia: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    alert(msg.trim());
+                } else {
+                    addAlert(dateKey);
+                }
+            };
+
+            calendar.appendChild(div);
+        }
+    }
+
+    function changeMonth(offset) {
+        current.setMonth(current.getMonth() + offset);
+        renderCalendar();
+    }
+
+    function addAlert(dateKey) {
+        const cliente = prompt('Nome do cliente:');
+        if (!cliente) return;
+        const valorParcela = prompt('Valor da parcela:');
+        if (!valorParcela) return;
+        const valorTotal = prompt('Valor total:');
+        if (!valorTotal) return;
+        const parcela = prompt('Parcela (ex.: 1/3):');
+        if (!parcela) return;
+
+        const aviso = {
+            cliente,
+            parcela,
+            valorParcela,
+            valorTotal,
+            observacao: ''
+        };
+
+        fetch('/add_aviso', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ dateKey, aviso })
+        }).then(() => carregarAvisos());
+    }
+
+    function renderAvisos() {
+        const avisosDiv = document.getElementById('avisos-lista');
+        avisosDiv.innerHTML = '';
+        const chaves = Object.keys(alerts).sort();
+
+        if (!chaves.length) {
+            avisosDiv.innerHTML = '<p class="empty-state">Nenhum aviso registrado.</p>';
+            return;
+        }
+
+        chaves.forEach(data => {
+            alerts[data].forEach((aviso, idx) => {
+                const item = document.createElement('div');
+                const isManualProcess = aviso.tipo === 'processo_manual' || Boolean(aviso.processo) || Boolean(aviso.numeroProcesso);
+                item.className = isManualProcess ? 'acompanhamento-row manual-process-row' : 'acompanhamento-row';
+                const label = isManualProcess ? 'Aviso de processo' : 'Cobrança';
+                const valor = isManualProcess ? (aviso.prazo || 'Prazo manual') : `R$ ${aviso.valorParcela}`;
+                item.innerHTML = `
+                    <div>
+                        <strong>${aviso.cliente}</strong>
+                        <p>${label} · ${aviso.observacao || 'Sem observação'}</p>
+                    </div>
+                    <div>
+                        <span>${valor}</span>
+                        <small>${data}</small>
+                    </div>
+                    <div class="row-actions">
+                        <button type="button" class="ghost-btn light compact" data-date="${data}" data-index="${idx}">Editar</button>
+                        <button type="button" class="ghost-btn light compact danger" data-date="${data}" data-index="${idx}">Excluir</button>
+                    </div>
+                `;
+
+                item.querySelector('.ghost-btn.compact').onclick = function () {
+                    const novaObs = prompt('Editar observação:', aviso.observacao || '');
+                    if (novaObs !== null) {
+                        const novoAviso = { ...aviso, observacao: novaObs };
+                        fetch('/editar_aviso', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ dateKey: data, idx, aviso: novoAviso })
+                        }).then(() => carregarAvisos());
+                    }
+                };
+
+                item.querySelector('.ghost-btn.danger').onclick = function () {
+                    if (confirm('Deseja excluir este aviso?')) {
+                        fetch('/excluir_aviso', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ dateKey: data, idx })
+                        }).then(() => carregarAvisos());
+                    }
+                };
+
+                avisosDiv.appendChild(item);
+            });
+        });
+    }
+
+    function carregarAvisos() {
+        fetch('/get_avisos')
+            .then(response => response.json())
+            .then(data => {
+                alerts = data;
+                renderAvisos();
+                renderCalendar();
+            });
+    }
+
+    document.getElementById('calendarioForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const cliente = document.getElementById('cliente').value;
+        const valorTotal = parseFloat(document.getElementById('valor').value.replace('.', '').replace(',', '.'));
+        const dataInicial = document.getElementById('data').value;
+        const parcelas = parseInt(document.getElementById('parcelas').value);
+        const observacao = document.getElementById('observacao').value;
+
+        if (!dataInicial || parcelas < 1 || isNaN(valorTotal)) return;
+
+        const valorParcela = (valorTotal / parcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const [ano, mes, dia] = dataInicial.split('-').map(Number);
+        const promessas = [];
+
+        for (let i = 0; i < parcelas; i++) {
+            let parcelaMes = mes - 1 + i;
+            let parcelaAno = ano + Math.floor(parcelaMes / 12);
+            parcelaMes = parcelaMes % 12;
+            const ultimoDiaMes = new Date(parcelaAno, parcelaMes + 1, 0).getDate();
+            const diaParcela = Math.min(dia, ultimoDiaMes);
+            const dateKey = `${parcelaAno}-${String(parcelaMes + 1).padStart(2, '0')}-${String(diaParcela).padStart(2, '0')}`;
+
+            const aviso = {
+                cliente,
+                parcela: `${i + 1}/${parcelas}`,
+                valorParcela,
+                valorTotal: valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                observacao
+            };
+
+            promessas.push(fetch('/add_aviso', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ dateKey, aviso })
+            }));
+        }
+
+        Promise.all(promessas).then(() => {
+            carregarAvisos();
+            this.reset();
+        });
+    });
+
+    document.getElementById('clienteManual')?.addEventListener('change', preencherProcessoManual);
+
+    document.getElementById('calendarioManualForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const processo = document.getElementById('processoManual').value.trim();
+        const dias = parseInt(document.getElementById('diasManual').value, 10);
+        const dataBase = document.getElementById('dataBaseManual').value;
+        const observacao = document.getElementById('obsManual').value.trim();
+
+        if (!processo || !dataBase || !dias) {
+            alert('Preencha processo, data base e quantidade de dias úteis.');
+            return;
+        }
+
+        const feriados = ['2025-01-01', '2025-04-21', '2025-05-01', '2025-09-07', '2025-10-12', '2025-11-02', '2025-11-15', '2025-12-25'];
+        const dateKey = adicionarDiasUteis(dataBase, dias, feriados);
+
+        const aviso = {
+            cliente: processo,
+            numeroProcesso: processo,
+            tipo: 'processo_manual',
+            prazo: `${dias} dias úteis`,
+            data_base: dataBase,
+            observacao,
+            data_final: dateKey,
+            dateKey,
+            processo
+        };
+
+        fetch('/add_aviso', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ dateKey, aviso })
+        }).then(() => {
+            carregarAvisos();
+            this.reset();
+        });
+    });
+
+    function dividirTodasParcelas() {
+        Object.keys(alerts).forEach(dateKey => {
+            alerts[dateKey].forEach(aviso => {
+                if (!/^\d+\/\d+$/.test(aviso.parcela)) return;
+                const totalParcelas = parseInt(aviso.parcela.split('/')[1], 10);
+                const valorTotal = parseFloat((aviso.valorTotal || '0').replace('.', '').replace(',', '.'));
+                const valorParcela = (valorTotal / totalParcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const [ano, mes, dia] = dateKey.split('-').map(Number);
+
+                for (let i = 1; i <= totalParcelas; i++) {
+                    let parcelaMes = mes - 1 + (i - 1);
+                    let parcelaAno = ano + Math.floor(parcelaMes / 12);
+                    parcelaMes = parcelaMes % 12;
+                    const ultimoDiaMes = new Date(parcelaAno, parcelaMes + 1, 0).getDate();
+                    const diaParcela = Math.min(dia, ultimoDiaMes);
+                    const newDateKey = `${parcelaAno}-${String(parcelaMes + 1).padStart(2, '0')}-${String(diaParcela).padStart(2, '0')}`;
+
+                    const newAviso = {
+                        ...aviso,
+                        parcela: `${i}/${totalParcelas}`,
+                        valorParcela
+                    };
+
+                    if (!alerts[newDateKey]) alerts[newDateKey] = [];
+                    if (!alerts[newDateKey].some(a => a.cliente === aviso.cliente && a.parcela === newAviso.parcela)) {
+                        alerts[newDateKey].push(newAviso);
+                        fetch('/add_aviso', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ dateKey: newDateKey, aviso: newAviso })
+                        });
+                    }
+                }
+            });
+        });
+        renderCalendar();
+    }
+
+    carregarAvisos();
+</script>
+
+{% endblock %}

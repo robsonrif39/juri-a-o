@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Juri &amp; Ação{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/menu.css') }}">
+    <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand brand-text-only">
+                <div>
+                    <span class="brand-kicker">Advocacia</span>
+                    <h1>Juri &amp; Ação</h1>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('home') }}" class="nav-item active">
+                    <span class="icon">⌂</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('cadastro') }}" class="nav-item">
+                    <span class="icon">✦</span>
+                    <span>Cadastro</span>
+                </a>
+                <a href="{{ url_for('consulta') }}" class="nav-item">
+                    <span class="icon">⌕</span>
+                    <span>Consulta</span>
+                </a>
+                <a href="{{ url_for('calendario') }}" class="nav-item">
+                    <span class="icon">◫</span>
+                    <span>Calendário</span>
+                </a>
+                <a href="{{ url_for('lista') }}" class="nav-item">
+                    <span class="icon">☰</span>
+                    <span>Lista</span>
+                </a>
+                <a href="{{ url_for('honorarios') }}" class="nav-item">
+                    <span class="icon">₿</span>
+                    <span>Honorários</span>
+                </a>
+            </nav>
+
+            <a href="{{ url_for('calendario') }}" class="sidebar-card" style="text-decoration:none; display:block;">
+                <div class="sidebar-card-head">
+                    <span class="sidebar-card-icon">📅</span>
+                    <p>Próximo evento</p>
+                </div>
+                {% if proximo_evento and proximo_evento.data %}
+                    <strong>{{ proximo_evento.data_breve }}</strong>
+                    <span>{{ proximo_evento.titulo|truncate(42, True) }}</span>
+                {% else %}
+                    <strong>Sem data</strong>
+                    <span>Cadastre um evento no calendário</span>
+                {% endif %}
+                <small>Ver agenda</small>
+            </a>
+        </aside>
+
+        <main class="main-panel">
+            <header class="topbar">
+                <div class="welcome-block">
+                    <span class="eyebrow">Bom dia</span>
+                    <h2>{{ session.get('advogado_nome') or 'Advogado' }}</h2>
+                </div>
+                <div class="topbar-actions">
+                    <button class="ghost-btn" type="button" aria-label="Notificações">🔔</button>
+                    <a href="{{ url_for('cadastro_advogado') }}" class="primary-btn" style="text-decoration:none; display:inline-flex; align-items:center;">+ Novo advogado</a>
+                    {% if session.get('advogado_id') %}
+                        <a href="{{ url_for('logout') }}" class="ghost-btn" style="text-decoration:none; display:inline-flex; align-items:center;">Sair</a>
+                    {% endif %}
+                </div>
+            </header>
+
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Juri &amp; Ação</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/menu.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-shell">
+        <div class="auth-card">
+            <div class="auth-brand auth-brand-text-only">
+                <div>
+                    <span class="brand-kicker">Advocacia</span>
+                    <h1>Juri &amp; Ação</h1>
+                </div>
+            </div>
+
+            <h1>Entrar no sistema</h1>
+            <p>Use seu login e senha para acessar o escritório.</p>
+
+            {% if erro %}
+                <div class="auth-alert">{{ erro }}</div>
+            {% endif %}
+
+            <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+                <div class="field-group">
+                    <label for="login">Login</label>
+                    <input type="text" id="login" name="login" placeholder="Digite seu login" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" name="senha" placeholder="Digite sua senha" required>
+                </div>
+
+                <button type="submit" class="primary-btn dark auth-submit">Entrar</button>
+            </form>
+
+            <div class="auth-footer">
+                <span>Não tem acesso?</span>
+                <a href="{{ url_for('cadastro_advogado') }}">Cadastrar advogado</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

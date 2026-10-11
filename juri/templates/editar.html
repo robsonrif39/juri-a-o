@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Editar Cliente{% endblock %}
+{% block content %}
+
+<section class="consulta-hero lista-hero">
+    <div class="consulta-copy">
+        <span class="badge">Edição</span>
+        <h3>Atualizar dados do cliente</h3>
+        <p>Revise informações cadastrais e mantenha o escritório sempre atualizado.</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('lista') }}" class="ghost-btn light" style="text-decoration:none; display:inline-block;">Voltar</a>
+    </div>
+</section>
+
+<section class="panel form-panel">
+    <form method="POST" class="juridic-form">
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label>Nome</label>
+                <input type="text" name="nome" value="{{ cliente.nome }}" required>
+            </div>
+            <div class="field-group">
+                <label>E-mail</label>
+                <input type="email" name="email" value="{{ cliente.email }}">
+            </div>
+        </div>
+
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label>CPF</label>
+                <input type="text" name="cpf" value="{{ cliente.cpf }}" required>
+            </div>
+            <div class="field-group">
+                <label>RG</label>
+                <input type="text" name="rg" value="{{ cliente.rg }}" required>
+            </div>
+            <div class="field-group">
+                <label>Telefone</label>
+                <input type="text" name="telefone" value="{{ cliente.telefone }}" required>
+            </div>
+        </div>
+
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label>CEP</label>
+                <input type="text" name="cep" value="{{ cliente.cep }}">
+            </div>
+            <div class="field-group wide">
+                <label>Endereço</label>
+                <input type="text" name="endereco" value="{{ cliente.endereco }}">
+            </div>
+            <div class="field-group">
+                <label>Bairro</label>
+                <input type="text" name="bairro" value="{{ cliente.bairro }}">
+            </div>
+        </div>
+
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label>Cidade</label>
+                <input type="text" name="cidade" value="{{ cliente.cidade }}">
+            </div>
+            <div class="field-group">
+                <label>Tipo de caso</label>
+                <input type="text" name="tipoCaso" value="{{ cliente.tipoCaso }}">
+            </div>
+        </div>
+
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label>Número do processo</label>
+                <input type="text" name="numeroProcesso" value="{{ cliente.numeroProcesso }}">
+            </div>
+            <div class="field-group">
+                <label>Observações</label>
+                <textarea name="observacoes" rows="4">{{ cliente.observacoes }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary-btn dark">Salvar alterações</button>
+        </div>
+    </form>
+</section>
+
+{% endblock %}

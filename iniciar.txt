@@ -1,0 +1,4 @@
+cd júri
+
+
+& "C:\Users\robso\OneDrive\Desktop\juri_acao\.venv\Scripts\python.exe" app.py

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lex — App Jurídico &amp; Advocacia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0f2038;
+    --navy-2:#16304f;
+    --gold:#c9a24b;
+    --gold-soft:#e7d4a3;
+    --bg:#eef1f6;
+    --card:#ffffff;
+    --ink:#0f2038;
+    --muted:#7a869a;
+    --line:#e6eaf1;
+    --green:#2e9e6b;
+    --red:#d15757;
+    --shadow:0 18px 40px -18px rgba(15,32,56,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:linear-gradient(135deg,#dfe5ef,#eef1f6 40%,#e7ecf4);
+    color:var(--ink);
+    min-height:100vh;
+    padding:40px 16px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .head{text-align:center;margin-bottom:34px}
+  .head h1{font-family:'Playfair Display',serif;font-size:30px;color:var(--navy);letter-spacing:.3px}
+  .head p{color:var(--muted);font-size:14px;margin-top:6px}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:var(--navy);color:var(--gold-soft);
+    font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;margin-bottom:14px;letter-spacing:1px;text-transform:uppercase}
+
+  .stage{
+    display:flex;flex-wrap:wrap;gap:34px 30px;justify-content:center;align-items:flex-start;max-width:1200px;margin:0 auto;
+  }
+  .phone{
+    width:320px;background:#0b1626;border-radius:42px;padding:12px;
+    box-shadow:var(--shadow), inset 0 0 0 2px rgba(255,255,255,.05);
+    position:relative;
+  }
+  .screen{
+    background:var(--bg);border-radius:32px;overflow:hidden;height:660px;
+    display:flex;flex-direction:column;position:relative;
+  }
+  .notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:120px;height:26px;
+    background:#0b1626;border-radius:0 0 18px 18px;z-index:30}
+  .caption{text-align:center;color:var(--muted);font-size:12px;font-weight:600;margin-top:14px;letter-spacing:.5px;text-transform:uppercase}
+
+  /* status bar */
+  .status{display:flex;justify-content:space-between;align-items:center;padding:16px 22px 8px;font-size:12px;font-weight:600;color:var(--navy)}
+  .status.on-dark{color:#fff}
+  .status .dots{display:flex;gap:4px;align-items:center}
+
+  .scroll{flex:1;overflow-y:auto;padding-bottom:14px}
+  .scroll::-webkit-scrollbar{width:0}
+
+  /* ===== LOGIN ===== */
+  .login{background:radial-gradient(120% 80% at 50% 0%,var(--navy-2),var(--navy));color:#fff;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:30px 26px 30px}
+  .logo-lg{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:40px}
+  .crest{width:78px;height:78px;border-radius:20px;background:linear-gradient(160deg,var(--gold),#a37f2f);
+    display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:38px;color:#0b1626;box-shadow:0 12px 30px -8px rgba(201,162,75,.6)}
+  .logo-lg h2{font-family:'Playfair Display',serif;font-size:30px;letter-spacing:2px}
+  .logo-lg span{color:var(--gold-soft);font-size:12px;letter-spacing:3px;text-transform:uppercase}
+  .field{margin-bottom:14px}
+  .field label{font-size:11px;color:var(--gold-soft);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px}
+  .field input{width:100%;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);
+    border-radius:12px;padding:13px 14px;color:#fff;font-size:14px;outline:none}
+  .field input::placeholder{color:rgba(255,255,255,.45)}
+  .btn-gold{width:100%;background:linear-gradient(160deg,var(--gold),#b58e37);color:#0b1626;border:none;
+    padding:14px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;letter-spacing:.3px;box-shadow:0 12px 26px -10px rgba(201,162,75,.7)}
+  .login .link{text-align:center;color:rgba(255,255,255,.6);font-size:12px;margin-top:16px}
+  .login .link b{color:var(--gold-soft)}
+
+  /* ===== HOME ===== */
+  .topbar{background:var(--navy);color:#fff;padding:6px 20px 20px;border-radius:0 0 26px 26px}
+  .topbar .row{display:flex;align-items:center;justify-content:space-between}
+  .avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(160deg,var(--gold),#a37f2f);
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#0b1626}
+  .hello{font-size:12px;color:rgba(255,255,255,.6)}
+  .hello b{display:block;font-size:16px;color:#fff;margin-top:2px}
+  .bell{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;position:relative;font-size:18px}
+  .bell::after{content:'';position:absolute;top:9px;right:10px;width:8px;height:8px;background:var(--gold);border-radius:50%}
+  .search{margin-top:16px;background:rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;color:rgba(255,255,255,.6);font-size:13px;display:flex;gap:10px;align-items:center}
+
+  .sec{padding:18px 20px 0}
+  .sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .sec-h h3{font-size:15px;color:var(--navy)}
+  .sec-h a{font-size:12px;color:var(--gold);font-weight:600}
+
+  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .q{background:var(--card);border-radius:16px;padding:12px 6px;text-align:center;box-shadow:0 8px 20px -14px rgba(15,32,56,.4)}
+  .q .ic{width:40px;height:40px;margin:0 auto 8px;border-radius:12px;background:#f3f0e4;color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:19px}
+  .q span{font-size:10.5px;color:var(--muted);font-weight:600;line-height:1.2;display:block}
+
+  .card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 10px 26px -18px rgba(15,32,56,.5)}
+  .case{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+  .case:last-child{margin-bottom:0}
+  .tag{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+  .t-civil{background:#e8f0fb;color:#2f6bd1}
+  .t-trab{background:#eafaf0;color:var(--green)}
+  .t-pen{background:#fbeaea;color:var(--red)}
+  .case .body{flex:1}
+  .case h4{font-size:14px;color:var(--navy);margin:4px 0 3px}
+  .case p{font-size:12px;color:var(--muted)}
+  .case .num{font-size:11px;color:#9aa6b8;margin-top:5px}
+  .prog{height:6px;background:#eef1f6;border-radius:6px;margin-top:9px;overflow:hidden}
+  .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#e2c374);border-radius:6px}
+  .divider{height:1px;background:var(--line);margin:12px 0}
+
+  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .st{background:var(--card);border-radius:16px;padding:14px 10px;text-align:center;box-shadow:0 8px 20px -16px rgba(15,32,56,.4)}
+  .st b{font-family:'Playfair Display',serif;font-size:22px;color:var(--navy);display:block}
+  .st span{font-size:10.5px;color:var(--muted);font-weight:600}
+
+  /* appointment / agenda */
+  .appt{display:flex;gap:14px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .appt:last-child{border-bottom:none}
+  .time{width:56px;text-align:center;flex-shrink:0}
+  .time b{display:block;font-size:16px;color:var(--navy)}
+  .time span{font-size:10px;color:var(--muted)}
+  .appt .info{flex:1;border-left:3px solid var(--gold);padding-left:12px}
+  .appt .info h4{font-size:13px;color:var(--navy)}
+  .appt .info p{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .daysel{display:flex;gap:8px;padding:0 20px 4px;overflow-x:auto}
+  .day{min-width:48px;text-align:center;background:var(--card);border-radius:14px;padding:10px 0;box-shadow:0 8px 18px -16px rgba(15,32,56,.5)}
+  .day.active{background:var(--navy);color:#fff}
+  .day span{font-size:10px;color:var(--muted);display:block}
+  .day.active span{color:var(--gold-soft)}
+  .day b{font-size:16px}
+
+  /* messages */
+  .msg{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+  .msg:last-child{border-bottom:none}
+  .mav{width:46px;height:46px;border-radius:14px;background:#e9edf4;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);flex-shrink:0}
+  .msg .mc{flex:1}
+  .msg .mc h4{font-size:13.5px;color:var(--navy)}
+  .msg .mc p{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+  .msg .meta{text-align:right}
+  .msg .meta span{font-size:10px;color:#9aa6b8}
+  .unread{display:inline-block;background:var(--gold);color:#0b1626;font-size:10px;font-weight:700;
+    min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;margin-top:5px}
+
+  /* profile */
+  .prof-top{background:var(--navy);color:#fff;text-align:center;padding:26px 20px 30px;border-radius:0 0 28px 28px}
+  .prof-top .avatar{width:82px;height:82px;font-size:30px;margin:0 auto 12px;border:3px solid var(--gold)}
+  .prof-top h3{font-family:'Playfair Display',serif;font-size:20px}
+  .prof-top .oab{color:var(--gold-soft);font-size:12px;margin-top:4px;letter-spacing:.5px}
+  .prof-top .tags{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .prof-top .tags span{background:rgba(255,255,255,.12);font-size:11px;padding:5px 12px;border-radius:16px}
+  .menu{background:var(--card);border-radius:16px;overflow:hidden;box-shadow:0 10px 26px -18px rgba(15,32,56,.5)}
+  .mrow{display:flex;align-items:center;gap:14px;padding:15px 16px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--navy);font-weight:500}
+  .mrow:last-child{border-bottom:none}
+  .mrow .mi{width:36px;height:36px;border-radius:10px;background:#f3f0e4;color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:16px}
+  .mrow .arw{margin-left:auto;color:#c4cdda}
+
+  /* bottom nav */
+  .nav{display:flex;justify-content:space-around;align-items:center;background:#fff;padding:12px 6px 14px;border-top:1px solid var(--line);box-shadow:0 -8px 22px -16px rgba(15,32,56,.4)}
+  .nav a{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:#a6b0c0;font-weight:600}
+  .nav a.active{color:var(--gold)}
+  .nav a .ni{font-size:20px}
+  .fab{width:52px;height:52px;border-radius:50%;background:linear-gradient(160deg,var(--gold),#b58e37);
+    display:flex;align-items:center;justify-content:center;color:#0b1626;font-size:26px;margin-top:-26px;box-shadow:0 12px 24px -8px rgba(201,162,75,.7)}
+
+  @media(max-width:720px){body{padding:24px 8px 40px}.phone{width:100%;max-width:340px}}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="badge">⚖ Design System</div>
+  <h1>Lex — App Jurídico &amp; Advocacia</h1>
+  <p>Layout de interface mobile · 5 telas · tema profissional (navy + dourado)</p>
+</div>
+
+<div class="stage">
+
+  <!-- ===== 1. LOGIN ===== -->
+  <div>
+    <div class="phone"><div class="notch"></div>
+      <div class="screen">
+        <div class="status on-dark"><span>9:41</span><div class="dots">●●● ▰ 🔋</div></div>
+        <div class="login">
+          <div class="logo-lg">
+            <div class="crest">L</div>
+            <div style="text-align:center">
+              <h2>LEX</h2>
+              <span>Advocacia Digital</span>
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label>E-mail</label>
+              <input type="email" placeholder="advogado@escritorio.com.br">
+            </div>
+            <div class="field">
+              <label>Senha</label>
+              <input type="password" placeholder="••••••••">
+            </div>
+            <button class="btn-gold">Entrar</button>
+            <div class="link">Esqueceu a senha? <b>Recuperar</b></div>
+          </div>
+          <div class="link" style="margin-top:0">Não tem conta? <b>Criar cadastro</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption">01 · Acesso</div>
+  </div>
+
+  <!-- ===== 2. HOME ===== -->
+  <div>
+    <div class="phone"><div class="notch"></div>
+      <div class="screen">
+        <div class="status on-dark" style="background:var(--navy)"><span>9:41</span><div class="dots">●●● ▰ 🔋</div></div>
+        <div class="scroll">
+          <div class="topbar">
+            <div class="row">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div class="avatar">RS</div>
+                <div class="hello">Bom dia,<b>Dra. Renata Silva</b></div>
+              </div>
+              <div class="bell">🔔</div>
+            </div>
+            <div class="search">🔍 Buscar processo, cliente ou número…</div>
+          </div>
+
+          <div class="sec">
+            <div class="stat3">
+              <div class="st"><b>18</b><span>Casos ativos</span></div>
+              <div class="st"><b>4</b><span>Audiências</span></div>
+              <div class="st"><b>7</b><span>Prazos</span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-h"><h3>Acesso rápido</h3></div>
+            <div class="quick">
+              <div class="q"><div class="ic">📁</div><span>Processos</span></div>
+              <div class="q"><div class="ic">📅</div><span>Agenda</span></div>
+              <div class="q"><div class="ic">👥</div><span>Clientes</span></div>
+              <div class="q"><div class="ic">💰</div><span>Honorários</span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="sec-h"><h3>Casos recentes</h3><a>Ver todos</a></div>
+            <div class="card">
+              <div class="case">
+                <div class="body">
+                  <span class="tag t-trab">Trabalhista</span>
+                  <h4>Ferreira x Logística Br LTDA</h4>
+                  <p>Próxima audiência · 02 out</p>
+                  <div class="num">Proc. 1004532-88.2025.5.02</div>
+                  <div class="prog"><i style="width:72%"></i></div>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div class="case">
+                <div class="body">
+                  <span class="tag t-civil">Cível</span>
+                  <h4>Inv. Amaral — Espólio</h4>
+                  <p>Aguardando despacho</p>
+                  <div class="num">Proc. 0087214-12.2025.8.26</div>
+                  <div class="prog"><i style="width:45%"></i></div>
+                </div>
+              </div>
+              <div class="divider"></div>
+              <div class="case">
+                <div class="body">
+                  <span class="tag t-pen">Criminal</span>
+                  <h4>Defesa — J. Moreira</h4>
+                  <p>Prazo recursal · 3 dias</p>
+                  <div class="num">Proc. 0012987-45.2025.8.26</div>
+                  <div class="prog"><i style="width:28%"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav">
+          <a class="active"><span class="ni">🏠</span>Início</a>
+          <a><span class="ni">📁</span>Casos</a>
+          <div class="fab">+</div>
+          <a><span class="ni">💬</span>Chat</a>
+          <a><span class="ni">👤</span>Perfil</a>
+        </div>
+      </div>
+    </div>
+    <div class="caption">02 · Início / Dashboard</div>
+  </div>
+
+  <!-- ===== 3. AGENDA ===== -->
+  <div>
+    <div class="phone"><div class="notch"></div>
+      <div class="screen">
+        <div class="status"><span>9:41</span><div class="dots">●●● ▰ 🔋</div></div>
+        <div class="scroll">
+          <div class="sec" style="padding-top:10px">
+            <div class="sec-h"><h3 style="font-family:'Playfair Display',serif;font-size:20px">Agenda</h3><a>Outubro ▾</a></div>
+          </div>
+          <div class="daysel">
+            <div class="day"><span>SEG</span><b>29</b></div>
+            <div class="day"><span>TER</span><b>30</b></div>
+            <div class="day active"><span>QUA</span><b>01</b></div>
+            <div class="day"><span>QUI</span><b>02</b></div>
+            <div class="day"><span>SEX</span><b>03</b></div>
+            <div class="day"><span>SÁB</span><b>04</b></div>
+          </div>
+          <div class="sec">
+            <div class="card">
+              <div class="appt">
+                <div class="time"><b>09:30</b><span>1h</span></div>
+                <div class="info"><h4>Audiência — Ferreira</h4><p>Vara do Trabalho · Sala 4</p></div>
+              </div>
+              <div class="appt">
+                <div class="time"><b>11:00</b><span>30min</span></div>
+                <div class="info"><h4>Reunião cliente</h4><p>Espólio Amaral · online</p></div>
+              </div>
+              <div class="appt">
+                <div class="time"><b>14:00</b><span>45min</span></div>
+                <div class="info"><h4>Prazo — Petição</h4><p>Contestação cível</p></div>
+              </div>
+              <div class="appt">
+                <div class="time"><b>16:30</b><span>1h</span></div>
+                <div class="info"><h4>Consulta nova</h4><p>Sr. Marcos — revisão contratual</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sec-h"><h3>Prazos críticos</h3></div>
+            <div class="card">
+              <div class="case">
+                <div class="body">
+                  <span class="tag t-pen">3 dias</span>
+                  <h4>Recurso — J. Moreira</h4>
+                  <p style="margin-top:3px">Apelação criminal</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="nav">
+          <a><span class="ni">🏠</span>Início</a>
+          <a class="active"><span class="ni">📅</span>Agenda</a>
+          <div class="fab">+</div>
+          <a><span class="ni">💬</span>Chat</a>
+          <a><span class="ni">👤</span>Perfil</a>
+        </div>
+      </div>
+    </div>
+    <div class="caption">03 · Agenda &amp; Prazos</div>
+  </div>
+
+  <!-- ===== 4. MENSAGENS ===== -->
+  <div>
+    <div class="phone"><div class="notch"></div>
+      <div class="screen">
+        <div class="status"><span>9:41</span><div class="dots">●●● ▰ 🔋</div></div>
+        <div class="scroll">
+          <div class="sec" style="padding-top:10px">
+            <div class="sec-h"><h3 style="font-family:'Playfair Display',serif;font-size:20px">Mensagens</h3><a>Novo +</a></div>
+            <div class="search" style="background:#e7ebf2;color:var(--muted)">🔍 Buscar conversa…</div>
+          </div>
+          <div class="sec">
+            <div class="card" style="padding:4px 16px">
+              <div class="msg">
+                <div class="mav">JF</div>
+                <div class="mc"><h4>João Ferreira</h4><p>Doutora, confirmo a audiência de…</p></div>
+                <div class="meta"><span>09:12</span><br><span class="unread">2</span></div>
+              </div>
+              <div class="msg">
+                <div class="mav">MA</div>
+                <div class="mc"><h4>Maria Amaral</h4><p>Enviei os documentos do espólio</p></div>
+                <div class="meta"><span>08:40</span></div>
+              </div>
+              <div class="msg">
+                <div class="mav">Ct</div>
+                <div class="mc"><h4>Cartório 3º Ofício</h4><p>Certidão disponível para retirada</p></div>
+                <div class="meta"><span>Ontem</span><br><span class="unread">1</span></div>
+              </div>
+              <div class="msg">
+                <div class="mav">MC</div>
+                <div class="mc"><h4>Marcos Costa</h4><p>Obrigado pela orientação!</p></div>
+                <div class="meta"><span>Ontem</span></div>
+              </div>
+              <div class="msg">
+                <div class="mav">Eq</div>
+                <div class="mc"><h4>Equipe do escritório</h4><p>Reunião de pauta às 18h</p></div>
+                <div class="meta"><span>Seg</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="nav">
+          <a><span class="ni">🏠</span>Início</a>
+          <a><span class="ni">📅</span>Agenda</a>
+          <div class="fab">+</div>
+          <a class="active"><span class="ni">💬</span>Chat</a>
+          <a><span class="ni">👤</span>Perfil</a>
+        </div>
+      </div>
+    </div>
+    <div class="caption">04 · Mensagens</div>
+  </div>
+
+  <!-- ===== 5. PERFIL ===== -->
+  <div>
+    <div class="phone"><div class="notch"></div>
+      <div class="screen">
+        <div class="status on-dark" style="background:var(--navy)"><span>9:41</span><div class="dots">●●● ▰ 🔋</div></div>
+        <div class="scroll">
+          <div class="prof-top">
+            <div class="avatar">RS</div>
+            <h3>Dra. Renata Silva</h3>
+            <div class="oab">OAB/SP 123.456 · Direito Empresarial</div>
+            <div class="tags"><span>Trabalhista</span><span>Cível</span><span>Criminal</span></div>
+          </div>
+          <div class="sec" style="padding-top:16px">
+            <div class="stat3">
+              <div class="st"><b>142</b><span>Casos</span></div>
+              <div class="st"><b>98%</b><span>Êxito</span></div>
+              <div class="st"><b>8</b><span>Anos</span></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="menu">
+              <div class="mrow"><div class="mi">👤</div>Dados pessoais<span class="arw">›</span></div>
+              <div class="mrow"><div class="mi">💼</div>Escritório &amp; equipe<span class="arw">›</span></div>
+              <div class="mrow"><div class="mi">💳</div>Honorários &amp; faturas<span class="arw">›</span></div>
+              <div class="mrow"><div class="mi">🔔</div>Notificações<span class="arw">›</span></div>
+              <div class="mrow"><div class="mi">🔒</div>Segurança &amp; privacidade<span class="arw">›</span></div>
+              <div class="mrow"><div class="mi">⚙️</div>Configurações<span class="arw">›</span></div>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="menu">
+              <div class="mrow" style="color:var(--red)"><div class="mi" style="background:#fbeaea;color:var(--red)">⏻</div>Sair da conta</div>
+            </div>
+          </div>
+        </div>
+        <div class="nav">
+          <a><span class="ni">🏠</span>Início</a>
+          <a><span class="ni">📅</span>Agenda</a>
+          <div class="fab">+</div>
+          <a><span class="ni">💬</span>Chat</a>
+          <a class="active"><span class="ni">👤</span>Perfil</a>
+        </div>
+      </div>
+    </div>
+    <div class="caption">05 · Perfil do Advogado</div>
+  </div>
+
+</div>
+</body>
+</html>

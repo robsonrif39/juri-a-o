@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% block title %}Consulta de Processos{% endblock %}
+{% block content %}
+
+<section class="consulta-hero">
+    <div class="consulta-copy">
+        <span class="badge">Consulta</span>
+        <h3>Consulta de processos e acompanhamento</h3>
+        <p>Centralize busca, prazos e registros em uma interface premium e funcional para o escritório.</p>
+    </div>
+    <div class="stat-strip">
+        <div class="mini-stat">
+            <span>Clientes</span>
+            <strong>{{ clientes|length }}</strong>
+        </div>
+        <div class="mini-stat">
+            <span>Alertas</span>
+            <strong>{{ clientes | length }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="modern-header">
+    <div>
+        <span class="badge">Consulta</span>
+        <h3>Consulta de processos e acompanhamento</h3>
+    </div>
+    <div class="header-actions">
+        <button class="ghost-btn light" id="abrir-esaj-btn" type="button">Abrir ESAJ</button>
+    </div>
+</section>
+
+<section class="panel search-panel">
+    <form id="pesquisa-form" class="juridic-form compact-form">
+        <div class="search-row">
+            <div class="field-group search-field">
+                <label for="oab">Número da OAB</label>
+                <input type="text" id="oab" name="oab" placeholder="Digite a OAB para consultar" required>
+            </div>
+            <button type="submit" class="primary-btn dark">Consultar</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel form-panel">
+    <div class="panel-header">
+        <h4>Dados do cliente e processo</h4>
+    </div>
+    <form class="juridic-form">
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label for="clienteConsulta">Cliente</label>
+                <select id="clienteConsulta" name="clienteConsulta">
+                    <option value="">Selecione um cliente</option>
+                    {% for cliente in clientes %}
+                        <option value="{{ cliente.nome }}">{{ cliente.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field-group">
+                <label for="processoConsulta">Processo</label>
+                <input type="text" id="processoConsulta" name="processoConsulta" placeholder="Número do processo">
+            </div>
+            <div class="field-group">
+                <label for="prazoConsulta">Prazo</label>
+                <input type="text" id="prazoConsulta" name="prazoConsulta" placeholder="Prazo ou data">
+            </div>
+        </div>
+    </form>
+</section>
+
+<section class="panel results-panel">
+    <div class="panel-header">
+        <h4>Resultado da busca</h4>
+    </div>
+    <div id="processos-lista" class="results-list">
+        <p class="empty-state">Nenhuma consulta realizada ainda.</p>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h4>Lista de acompanhamento</h4>
+    </div>
+    <div id="acompanhamento-lista" class="results-list"></div>
+</section>
+
+<script>
+    const clientesConsulta = {{ clientes | tojson }};
+    let acompanhamento = [];
+
+    function preencherDadosClienteConsulta() {
+        const selectCliente = document.getElementById('clienteConsulta');
+        const processoInput = document.getElementById('processoConsulta');
+        const prazoInput = document.getElementById('prazoConsulta');
+
+        if (!selectCliente || !processoInput || !prazoInput) return;
+
+        const clienteSelecionado = clientesConsulta.find(item => item.nome === selectCliente.value);
+        if (!clienteSelecionado) {
+            processoInput.value = '';
+            prazoInput.value = '';
+            return;
+        }
+
+        processoInput.value = clienteSelecionado.numeroProcesso || '';
+        prazoInput.value = clienteSelecionado.dataVencimentoProcesso || (clienteSelecionado.prazoDiasUteis ? `${clienteSelecionado.prazoDiasUteis} dias úteis` : '');
+    }
+
+    function parseDateInput(value) {
+        if (!value) return null;
+
+        if (typeof value === 'object') {
+            if (value.data) return parseDateInput(value.data);
+            if (value.date) return parseDateInput(value.date);
+            return null;
+        }
+
+        const text = String(value).trim();
+        const match = text.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})|(\d{4})-(\d{2})-(\d{2})/);
+        if (!match) return null;
+
+        let dia, mes, ano;
+        if (match[1]) {
+            dia = Number(match[1]);
+            mes = Number(match[2]);
+            ano = Number(match[3]);
+            if (ano < 100) ano += 2000;
+        } else {
+            ano = Number(match[4]);
+            mes = Number(match[5]);
+            dia = Number(match[6]);
+        }
+
+        const data = new Date(ano, mes - 1, dia);
+        return isNaN(data.getTime()) ? null : data;
+    }
+
+    function obterDataBaseProcesso(proc) {
+        const possiveis = [
+            proc.data_publicacao,
+            proc.dataBase,
+            proc.ultima_movimentacao,
+            proc.ultimaMovimentacao,
+            proc.ultima_movimentacao && proc.ultima_movimentacao.data,
+            proc.ultima_movimentacao && proc.ultima_movimentacao.descricao
+        ];
+
+        for (const valor of possiveis) {
+            const data = parseDateInput(valor);
+            if (data) return data;
+        }
+
+        return new Date();
+    }
+
+    function adicionarDiasUteis(dataBase, dias, feriados = []) {
+        if (!dataBase || !dias) return '';
+
+        const data = new Date(dataBase.getFullYear(), dataBase.getMonth(), dataBase.getDate());
+        data.setDate(data.getDate() + 1);
+        let adicionados = 0;
+
+        while (adicionados < Number(dias)) {
+            const iso = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+            const ehFeriado = feriados.includes(iso);
+            const ehFinalDeSemana = data.getDay() === 0 || data.getDay() === 6;
+
+            if (!ehFinalDeSemana && !ehFeriado) {
+                adicionados++;
+            }
+
+            if (adicionados < Number(dias)) {
+                data.setDate(data.getDate() + 1);
+            }
+        }
+
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const dia = String(data.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    document.getElementById('clienteConsulta')?.addEventListener('change', preencherDadosClienteConsulta);
+
+    document.getElementById('pesquisa-form')?.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const oab = document.getElementById('oab').value.trim();
+
+        fetch('/consulta_oab', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ oab: oab })
+        })
+        .then(resp => resp.json())
+        .then(processos => {
+            const lista = document.getElementById('processos-lista');
+            if (!processos.length) {
+                lista.innerHTML = '<p class="empty-state">Nenhum processo encontrado para esta OAB.</p>';
+                return;
+            }
+
+            lista.innerHTML = processos.map((proc, idx) => `
+                <article class="result-card">
+                    <div class="result-head">
+                        <strong>${proc.numero}</strong>
+                        <span class="tag tag-blue">${proc.assunto || 'Processo'}</span>
+                    </div>
+                    <p><strong>Partes:</strong> ${proc.partes || 'Não informado'}</p>
+                    <p><strong>Última movimentação:</strong> ${proc.ultima_movimentacao || 'Não informado'}</p>
+                    <p><strong>Petições:</strong> ${proc.peticoes || 'Não informado'}</p>
+                    <p><strong>Incidentes/Recursos/Sentença:</strong> ${proc.incidentes_recursos_sentenca || 'Não informado'}</p>
+                    <p><strong>Apenso:</strong> ${proc.apenso || 'Não informado'}</p>
+                    <p><strong>Audiência:</strong> ${proc.audiencia || 'Não informado'}</p>
+
+                    <div class="result-footer">
+                        <select id="prazo-select-${idx}">
+                            <option value="">Selecionar prazo</option>
+                            <option value="5">5 dias úteis</option>
+                            <option value="10">10 dias úteis</option>
+                            <option value="15">15 dias úteis</option>
+                            <option value="20">20 dias úteis</option>
+                            <option value="30">30 dias úteis</option>
+                            <option value="45">45 dias úteis</option>
+                            <option value="60">60 dias úteis</option>
+                            <option value="90">90 dias úteis</option>
+                            <option value="120">120 dias úteis</option>
+                        </select>
+                        <button type="button" class="primary-btn dark small-btn calendar-btn" id="registrar-prazo-proc-${idx}" title="Registrar prazo">
+                            <span class="calendar-icon" aria-hidden="true">📅</span>
+                            <span class="button-label">Registrar prazo</span>
+                        </button>
+                    </div>
+                    <div id="prazo-final-${idx}" class="prazo-final"></div>
+                </article>
+            `).join('');
+
+            const feriados = ['2025-01-01', '2025-04-18', '2025-04-21', '2025-05-01', '2025-09-07', '2025-10-12', '2025-11-02', '2025-11-15', '2025-12-25'];
+
+            processos.forEach((proc, idx) => {
+                const select = document.getElementById(`prazo-select-${idx}`);
+                const prazoFinal = document.getElementById(`prazo-final-${idx}`);
+                const registrarBtn = document.getElementById(`registrar-prazo-proc-${idx}`);
+
+                const atualizarTextoBotao = () => {
+                    const label = document.createElement('span');
+                    label.className = 'button-label';
+
+                    if (!select.value) {
+                        label.textContent = 'Registrar prazo';
+                        registrarBtn.title = 'Registrar prazo';
+                        registrarBtn.innerHTML = '<span class="calendar-icon" aria-hidden="true">📅</span>';
+                        registrarBtn.appendChild(label);
+                        return;
+                    }
+
+                    label.textContent = 'Salvar no calendário';
+                    registrarBtn.title = 'Adicionar aviso';
+                    registrarBtn.innerHTML = '<span class="calendar-icon" aria-hidden="true">📅</span>';
+                    registrarBtn.appendChild(label);
+                };
+
+                const atualizarPrazo = () => {
+                    const dias = Number(select.value);
+                    if (!dias) {
+                        prazoFinal.textContent = '';
+                        return '';
+                    }
+
+                    const dataBase = obterDataBaseProcesso(proc);
+                    const dataFinal = adicionarDiasUteis(dataBase, dias, feriados);
+                    prazoFinal.textContent = `Prazo final: ${dataFinal}`;
+                    return dataFinal;
+                };
+
+                select.addEventListener('change', () => {
+                    atualizarTextoBotao();
+                    atualizarPrazo();
+                });
+
+                atualizarTextoBotao();
+
+                registrarBtn.addEventListener('click', () => {
+                    const dias = Number(select.value);
+                    if (!dias) {
+                        alert('Selecione um prazo para registrar.');
+                        return;
+                    }
+
+                    const dataFinal = atualizarPrazo();
+                    if (!dataFinal) {
+                        alert('Não foi possível calcular a data final do prazo.');
+                        return;
+                    }
+
+                    const registro = {
+                        numero: proc.numero,
+                        assunto: proc.assunto,
+                        partes: proc.partes,
+                        ultima_movimentacao: proc.ultima_movimentacao,
+                        prazo: String(dias),
+                        data_final: dataFinal
+                    };
+
+                    fetch('/registrar_acompanhamento', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(registro)
+                    })
+                    .then(() => {
+                        carregarAcompanhamento();
+                        alert('Prazo registrado com sucesso!');
+                    })
+                    .catch(() => alert('Erro ao registrar o prazo.'));
+                });
+            });
+        });
+    });
+
+    document.getElementById('abrir-esaj-btn')?.addEventListener('click', function () {
+        const oab = document.getElementById('oab').value.trim();
+        if (!oab) {
+            alert('Digite a OAB antes de abrir o ESAJ.');
+            return;
+        }
+        const url = `https://esaj.tjsp.jus.br/cpopg/search.do?conversationId=&cbPesquisa=NUMOAB&dadosConsulta.valorConsulta=${encodeURIComponent(oab)}&cdForo=-1`;
+        window.open(url, '_blank');
+    });
+
+    function carregarAcompanhamento() {
+        fetch('/listar_acompanhamento')
+            .then(resp => resp.json())
+            .then(lista => {
+                const container = document.getElementById('acompanhamento-lista');
+                if (!lista.length) {
+                    container.innerHTML = '<p class="empty-state">Nenhum acompanhamento registrado.</p>';
+                    return;
+                }
+
+                container.innerHTML = lista.map((proc, idx) => `
+                    <div class="acompanhamento-row">
+                        <div>
+                            <strong>${proc.numero}</strong>
+                            <p>${proc.partes || 'Não informado'}</p>
+                        </div>
+                        <div>
+                            <span>${proc.data_final || 'Sem prazo'}</span>
+                            <small>${proc.ultima_movimentacao || 'Sem movimentação'}</small>
+                        </div>
+                        <div class="row-actions">
+                            <button type="button" class="ghost-btn light compact" data-idx="${idx}" data-numero="${proc.numero}">Editar</button>
+                            <button type="button" class="ghost-btn light compact danger" data-idx="${idx}" data-numero="${proc.numero}">Excluir</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.querySelectorAll('.ghost-btn.danger').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const numero = this.dataset.numero;
+                        fetch('/excluir_acompanhamento', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ numero: numero })
+                        }).then(() => carregarAcompanhamento());
+                    });
+                });
+
+                document.querySelectorAll('.ghost-btn.compact[data-idx]').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const numero = this.dataset.numero;
+                        const novoPrazo = prompt('Digite o novo prazo final (ex.: 31/12/2025):');
+                        if (!novoPrazo) return;
+
+                        fetch('/editar_acompanhamento', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ numero: numero, prazo_final: novoPrazo })
+                        }).then(() => carregarAcompanhamento());
+                    });
+                });
+            });
+    }
+
+    window.addEventListener('DOMContentLoaded', carregarAcompanhamento);
+</script>
+
+{% endblock %}
+
+    // Função para extrair a data da publicação do texto da movimentação
+    function extrairDataPublicacao(movimentacao) {
+        const match = movimentacao && movimentacao.match(/Data da Publicação:\s*(\d{2}\/\d{2}\/\d{4})/);
+        if (match) {
+            return match[1];
+        }
+        return null;
+    }
+</script>
+
+
+</body>
+</html>

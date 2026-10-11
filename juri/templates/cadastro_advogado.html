@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Cadastro de Advogado{% endblock %}
+{% block content %}
+
+<section class="modern-header">
+    <div>
+        <span class="badge">Cadastro</span>
+        <h3>Dados do advogado</h3>
+    </div>
+</section>
+
+<section class="panel form-panel">
+    {% if erro %}
+        <div class="auth-alert" style="margin-bottom: 20px;">{{ erro }}</div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('cadastro_advogado') }}" class="juridic-form">
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label for="nome">Nome completo</label>
+                <input type="text" id="nome" name="nome" placeholder="Digite o nome do advogado" required>
+            </div>
+            <div class="field-group">
+                <label for="oab">OAB</label>
+                <input type="text" id="oab" name="oab" placeholder="Ex.: 123456/SP" required>
+            </div>
+        </div>
+
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label for="login">Login</label>
+                <input type="text" id="login" name="login" placeholder="Escolha um login" required>
+            </div>
+            <div class="field-group">
+                <label for="senha">Senha</label>
+                <input type="password" id="senha" name="senha" placeholder="Crie uma senha" required>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="primary-btn dark">Salvar advogado</button>
+        </div>
+    </form>
+</section>
+
+{% endblock %}

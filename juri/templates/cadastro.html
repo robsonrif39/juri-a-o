@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Cadastro de Cliente{% endblock %}
+{% block content %}
+
+<section class="consulta-hero cadastro-hero">
+    <div class="consulta-copy">
+        <span class="badge">Cadastro</span>
+        <h3>Cadastro do cliente e do processo</h3>
+        <p>Registre dados, prazos e movimentações com uma interface refinada e prática para o dia a dia do escritório.</p>
+    </div>
+    <div class="stat-strip">
+        <div class="mini-stat">
+            <span>Atendimento</span>
+            <strong>Premium</strong>
+        </div>
+        <div class="mini-stat">
+            <span>Prazos</span>
+            <strong>Ativos</strong>
+        </div>
+    </div>
+</section>
+
+<section class="panel form-panel">
+    <form id="cadastroForm" method="POST" action="{{ url_for('cadastro') }}" class="juridic-form">
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label for="nome">Nome completo</label>
+                <input type="text" id="nome" name="nome" placeholder="Digite o nome do cliente" required>
+            </div>
+            <div class="field-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" placeholder="cliente@email.com.br">
+            </div>
+        </div>
+
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label for="cpf">CPF</label>
+                <input type="text" id="cpf" name="cpf" required>
+            </div>
+            <div class="field-group">
+                <label for="rg">RG</label>
+                <input type="text" id="rg" name="rg" required>
+            </div>
+            <div class="field-group">
+                <label for="telefone">Telefone</label>
+                <input type="tel" id="telefone" name="telefone">
+            </div>
+        </div>
+
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label for="cep">CEP</label>
+                <input type="text" id="cep" name="cep" required>
+            </div>
+            <div class="field-group wide">
+                <label for="endereco">Endereço</label>
+                <input type="text" id="endereco" name="endereco" required>
+            </div>
+            <div class="field-group">
+                <label for="bairro">Bairro</label>
+                <input type="text" id="bairro" name="bairro" required>
+            </div>
+        </div>
+
+        <div class="form-grid two-columns">
+            <div class="field-group">
+                <label for="cidade">Cidade</label>
+                <input type="text" id="cidade" name="cidade" required>
+            </div>
+            <div class="field-group">
+                <label for="tipoCaso">Tipo de caso</label>
+                <select id="tipoCaso" name="tipoCaso" required>
+                    <option value="civel">Cível</option>
+                    <option value="criminal">Criminal</option>
+                    <option value="trabalhista">Trabalhista</option>
+                    <option value="previdenciario">Previdenciário</option>
+                    <option value="outro">Outro</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid three-columns">
+            <div class="field-group">
+                <label for="numeroProcesso">Número do processo</label>
+                <input type="text" id="numeroProcesso" name="numeroProcesso" required>
+            </div>
+            <div class="field-group">
+                <label for="dataVencimentoProcesso">Data de vencimento</label>
+                <input type="date" id="dataVencimentoProcesso" name="dataVencimentoProcesso">
+            </div>
+            <div class="field-group">
+                <label for="prazoDiasUteis">Prazo em dias úteis</label>
+                <input type="number" id="prazoDiasUteis" name="prazoDiasUteis" min="1" placeholder="Ex.: 15">
+            </div>
+        </div>
+
+        <div class="field-group observacoes-group">
+            <label for="observacoes">Observações</label>
+            <textarea id="observacoes" name="observacoes" rows="4" placeholder="Informações complementares, riscos, prazos e demandas relevantes"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="ghost-btn light">Limpar</button>
+            <button type="submit" class="primary-btn dark">Cadastrar cliente</button>
+        </div>
+    </form>
+</section>
+
+{% endblock %}

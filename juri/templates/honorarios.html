@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Honorários a receber{% endblock %}
+{% block content %}
+
+<section class="modern-header premium-header">
+    <div>
+        <span class="badge">Financeiro</span>
+        <h3>Honorários a receber</h3>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('calendario') }}" class="ghost-btn light" style="text-decoration:none; display:inline-flex; align-items:center;">Ver agenda</a>
+    </div>
+</section>
+
+<section class="stats-grid premium-metrics">
+    <article class="stat-card accent">
+        <span class="stat-label">Total a receber</span>
+        <strong>{{ total_honorarios_formatado }}</strong>
+        <small>somatório do calendário</small>
+    </article>
+    <article class="stat-card">
+        <span class="stat-label">Clientes com cobrança</span>
+        <strong>{{ total_clientes or 0 }}</strong>
+        <small>atualmente ativos</small>
+    </article>
+    <article class="stat-card">
+        <span class="stat-label">Itens registrados</span>
+        <strong>{{ honorarios|length }}</strong>
+        <small>lançamentos em aberto</small>
+    </article>
+</section>
+
+<section class="panel premium-panel">
+    <div class="panel-header">
+        <h4>Recebimentos cadastrados</h4>
+    </div>
+
+    <div class="filter-toolbar">
+        <div class="field-group compact-field">
+            <label for="clienteFilter">Cliente</label>
+            <select id="clienteFilter">
+                <option value="todos">Todos os clientes</option>
+                {% set clientes_unicos = [] %}
+                {% for item in honorarios %}
+                    {% if item.cliente not in clientes_unicos %}
+                        {% set _ = clientes_unicos.append(item.cliente) %}
+                        <option value="{{ item.cliente }}">{{ item.cliente }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="field-group compact-field date-field">
+            <label for="dataInicio">Data inicial</label>
+            <input type="date" id="dataInicio" value="{{ data_inicio or '' }}">
+        </div>
+
+        <div class="field-group compact-field date-field">
+            <label for="dataFim">Data final</label>
+            <input type="date" id="dataFim" value="{{ data_fim or '' }}">
+        </div>
+
+        <div class="toolbar-actions">
+            <button type="button" class="ghost-btn light" id="aplicarFiltroBtn">Aplicar filtro</button>
+            <button type="button" class="primary-btn dark export-btn" id="exportResumoBtn">Exportar resumo</button>
+        </div>
+    </div>
+
+    {% if chart_data %}
+    <div class="chart-panel">
+        <div class="chart-header">
+            <h5>Recebimentos por mês</h5>
+        </div>
+        <div class="chart-bars">
+            {% for item in chart_data %}
+                <div class="chart-col" title="{{ item.label }}: {{ item.valor_formatado }}">
+                    <span class="chart-value">{{ item.valor_formatado }}</span>
+                    <div class="chart-bar" style="height: {{ item.altura }}%"></div>
+                    <small>{{ item.label }}</small>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if honorarios %}
+        <div class="table-wrap">
+            <table class="premium-table">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Data</th>
+                        <th>Parcela</th>
+                        <th>Valor</th>
+                        <th>Status</th>
+                        <th>Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in honorarios %}
+                        <tr class="honorario-row" data-cliente="{{ item.cliente }}" data-datekey="{{ item.dateKey }}" data-index="{{ item.index }}">
+                            <td>{{ item.cliente }}</td>
+                            <td>{{ item.data }}</td>
+                            <td>{{ item.parcela }}</td>
+                            <td class="valor-col">{{ item.valor_formatado }}</td>
+                            <td>
+                                <button type="button" class="status-btn {{ 'paid' if item.status == 'recebido' else 'pending' }}" data-status="{{ item.status }}" data-datekey="{{ item.dateKey }}" data-index="{{ item.index }}">
+                                    {{ 'Recebido' if item.status == 'recebido' else 'Pendente' }}
+                                </button>
+                            </td>
+                            <td>{{ item.observacao }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">Nenhum honorário registrado no calendário ainda.</div>
+    {% endif %}
+</section>
+
+<script>
+    const filterSelect = document.getElementById('clienteFilter');
+    const rows = Array.from(document.querySelectorAll('.honorario-row'));
+
+    function filterRows() {
+        const cliente = filterSelect ? filterSelect.value : 'todos';
+        rows.forEach(row => {
+            const match = cliente === 'todos' || row.dataset.cliente === cliente;
+            row.style.display = match ? '' : 'none';
+        });
+    }
+
+    if (filterSelect) {
+        filterSelect.addEventListener('change', filterRows);
+    }
+
+    document.getElementById('aplicarFiltroBtn')?.addEventListener('click', function () {
+        const dataInicio = document.getElementById('dataInicio')?.value || '';
+        const dataFim = document.getElementById('dataFim')?.value || '';
+        const params = new URLSearchParams();
+        if (dataInicio) params.set('data_inicio', dataInicio);
+        if (dataFim) params.set('data_fim', dataFim);
+        window.location.search = params.toString() ? `?${params.toString()}` : '';
+    });
+
+    document.getElementById('exportResumoBtn')?.addEventListener('click', function () {
+        const selectedClient = filterSelect ? filterSelect.value : 'todos';
+        const visibleRows = rows.filter(row => {
+            if (selectedClient === 'todos') return true;
+            return row.dataset.cliente === selectedClient;
+        });
+
+        const csvRows = [
+            ['Cliente', 'Data', 'Parcela', 'Valor', 'Status', 'Observação'],
+            ...visibleRows.map(row => [
+                row.children[0].textContent.trim(),
+                row.children[1].textContent.trim(),
+                row.children[2].textContent.trim(),
+                row.children[3].textContent.trim(),
+                row.children[4].querySelector('button')?.textContent.trim() || 'Pendente',
+                row.children[5].textContent.trim(),
+            ])
+        ];
+
+        const csvContent = csvRows.map(line => line.map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const fileName = selectedClient === 'todos' ? 'resumo_honorarios.csv' : `honorarios_${selectedClient.toLowerCase().replace(/\s+/g, '_')}.csv`;
+
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    document.querySelectorAll('.status-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const nextStatus = this.dataset.status === 'recebido' ? 'pendente' : 'recebido';
+            fetch('/toggle_honorario_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    dateKey: this.dataset.datekey,
+                    index: Number(this.dataset.index),
+                    status: nextStatus,
+                })
+            }).then(response => response.json()).then(() => location.reload());
+        });
+    });
+</script>
+
+{% endblock %}

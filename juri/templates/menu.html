@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Jurídico{% endblock %}
+{% block content %}
+
+<section class="consulta-hero dashboard-hero">
+    <div class="consulta-copy">
+        <span class="badge">Gestão Estratégica</span>
+        <h3>Seu escritório sob controle, com visão em tempo real.</h3>
+        <p>Monitoramento de clientes, processos e vencimentos em um painel alinhado ao padrão premium do escritório.</p>
+    </div>
+    <div class="stat-strip">
+        <div class="mini-stat">
+            <span>Clientes</span>
+            <strong>{{ total_clientes or 0 }}</strong>
+        </div>
+        <div class="mini-stat">
+            <span>Prazos</span>
+            <strong>{{ clientes_vencendo_hoje or 0 }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card">
+        <span class="stat-label">Clientes</span>
+        <strong>{{ total_clientes or 0 }}</strong>
+        <small>cadastrados</small>
+    </article>
+    <article class="stat-card accent">
+        <span class="stat-label">Vencimentos hoje</span>
+        <strong>{{ clientes_vencendo_hoje or 0 }}</strong>
+        <small>contas e cobranças</small>
+    </article>
+    <article class="stat-card">
+        <span class="stat-label">Prazos urgentes</span>
+        <strong>{{ processos_vencendo_hoje or 0 }}</strong>
+        <small>processos ativos</small>
+    </article>
+    <article class="stat-card">
+        <span class="stat-label">Audiências</span>
+        <strong>04</strong>
+        <small>na próxima semana</small>
+    </article>
+</section>
+
+<section class="content-grid">
+    <div class="panel panel-wide">
+        <div class="panel-header">
+            <h4>Acesso rápido</h4>
+            <a href="{{ url_for('honorarios') }}">Ver tudo</a>
+        </div>
+
+        <div class="shortcut-grid">
+            <a href="{{ url_for('lista') }}" class="shortcut-item" aria-label="Processos">
+                <div class="shortcut-icon">📁</div>
+                <span>Processos</span>
+            </a>
+            <a href="{{ url_for('calendario') }}" class="shortcut-item" aria-label="Agenda">
+                <div class="shortcut-icon">📅</div>
+                <span>Agenda</span>
+            </a>
+            <a href="{{ url_for('lista') }}" class="shortcut-item" aria-label="Clientes">
+                <div class="shortcut-icon">👥</div>
+                <span>Clientes</span>
+            </a>
+            <a href="{{ url_for('honorarios') }}" class="shortcut-item" aria-label="Honorários">
+                <div class="shortcut-icon">💰</div>
+                <span>Honorários</span>
+            </a>
+        </div>
+
+        <div class="expiring-panel">
+            <div class="expiring-header">
+                <span>Casos vencendo</span>
+                <strong>{{ alertas_vencimento|length or 0 }}</strong>
+            </div>
+
+            <div class="expiring-list">
+                {% for item in alertas_vencimento[:5] %}
+                    <div class="expiring-item">
+                        <div class="expiring-info">
+                            <span class="expiring-bullet"></span>
+                            <div>
+                                <strong>{{ item.cliente or item.nome or 'Caso sem cliente' }}</strong>
+                                <small>{{ item.numeroProcesso or item.numero or 'Processo' }}</small>
+                            </div>
+                        </div>
+                        <span class="expiring-days {% if item.dias_restantes <= 0 %}danger{% else %}warning{% endif %}">
+                            {% if item.dias_restantes <= 0 %}Venceu{% else %}{{ item.dias_restantes }}d{% endif %}
+                        </span>
+                    </div>
+                {% else %}
+                    <div class="empty-quick-state">Nenhum caso em vencimento.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <section class="panel client-panel">
+        <div class="panel-header">
+            <h4>Clientes</h4>
+            <a href="{{ url_for('lista') }}">Ver todos</a>
+        </div>
+
+        <div class="client-list">
+            {% for cliente in clientes_lista[:8] %}
+                <div class="client-item">
+                    <span class="client-avatar">{{ (cliente.nome or 'C')[:1]|upper }}</span>
+                    <div class="client-info">
+                        <strong>{{ cliente.nome or 'Cliente sem nome' }}</strong>
+                        <small>{{ cliente.numeroProcesso or cliente.tipoCaso or 'Cliente ativo' }}</small>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-client-state">Nenhum cliente cadastrado.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="panel summary-panel">
+        <div class="panel-header">
+            <h4>Resumo</h4>
+        </div>
+
+        <div class="mini-list">
+            <div class="mini-item">
+                <span class="dot green"></span>
+                <div>
+                    <strong>{{ total_clientes or 0 }}</strong>
+                    <small>casos ativos</small>
+                </div>
+            </div>
+
+            {% for grupo in resumo_grupos %}
+                <div class="mini-item mini-item-group mini-item-{{ grupo.color }}">
+                    <span class="dot {{ grupo.color }}"></span>
+                    <div class="mini-item-content">
+                        <div class="mini-header-row">
+                            <strong>{{ grupo.itens|length }}</strong>
+                            <small>{{ grupo.label }}</small>
+                        </div>
+                        <div class="chip-list">
+                            {% if grupo.itens %}
+                                {% for item in grupo.itens %}
+                                    <span class="status-chip status-chip-{{ grupo.color }}" title="{{ item.data }} • {{ item.numero }}">
+                                        <span class="chip-icon">⚠</span>
+                                        <span class="chip-stack">
+                                            <span class="chip-label">{{ item.nome }}</span>
+                                            <span class="chip-meta">vencendo em {{ item.dias }} dias</span>
+                                        </span>
+                                        <span class="chip-days">{{ item.dias }}d</span>
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="status-chip status-chip-muted">Sem alertas</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h4>Casos recentes</h4>
+        <a href="{{ url_for('lista') }}">Todos</a>
+    </div>
+
+    <div class="case-list">
+        {% if casos_recentes %}
+            {% for caso in casos_recentes %}
+                <article class="case-card">
+                    <div class="case-top">
+                        <span class="tag {{ caso.tag_class }}">{{ caso.tag }}</span>
+                        <span class="date">{{ caso.data.strftime('%d %b') if caso.data else 'Hoje' }}</span>
+                    </div>
+                    <h5>{{ caso.titulo }}</h5>
+                    <p>{{ caso.descricao }}</p>
+                    <div class="progress-bar"><span style="width: {{ caso.progress }}%"></span></div>
+                </article>
+            {% endfor %}
+        {% else %}
+            <article class="case-card">
+                <div class="case-top">
+                    <span class="tag tag-blue">Sem dados</span>
+                    <span class="date">Hoje</span>
+                </div>
+                <h5>Nenhum caso recente</h5>
+                <p>Ainda não há registros no calendário ou na consulta.</p>
+                <div class="progress-bar"><span style="width:0%"></span></div>
+            </article>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}
+
